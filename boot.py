@@ -370,7 +370,6 @@ def cmd_flash(args) -> dict:
         bcp = BcpClient(ser)
         fwp = FwpClient(ser)
 
-        # Drain anything stale before starting.
         ser.reset_input_buffer()
 
         if not args.json:
@@ -381,37 +380,27 @@ def cmd_flash(args) -> dict:
                 file=sys.stderr,
             )
 
-        # 1) Kick off flashing. Bootloader does NOT reply at this point — it
-        #    erases pages and immediately enters fwp_receive(), so the BCP
-        #    response for FLASH only arrives after the FWP transfer completes.
         bcp.send(BcpCommand.FLASH, bytes([args.slot]))
 
-        # Small grace period to let the bootloader finish erasing pages
-        # before we start hammering the START packet at it.
-        time.sleep(0.05)
+        erase_resp = bcp.recv(timeout=10.0)
+        if erase_resp.command != BcpCommand.FLASH:
+            return {
+                "ok": False,
+                "command": "flash",
+                "slot": args.slot,
+                "error": f"unexpected command in erase ack: 0x{erase_resp.command:02X}",
+            }
+        if not erase_resp.is_ok:
+            return {
+                "ok": False,
+                "command": "flash",
+                "slot": args.slot,
+                "error": f"erase failed: {erase_resp.status_name}",
+            }
 
-        # 2) Stream the image over FWP.
         progress_cb = None if args.json else _make_progress_cb()
         fwp.transfer(image, progress_cb=progress_cb)
 
-        # 3) Read the BCP response that handle_flash queued after fwp_receive.
-        flash_resp = bcp.recv(timeout=10.0)
-        if flash_resp.command != BcpCommand.FLASH:
-            return {
-                "ok": False,
-                "command": "flash",
-                "slot": args.slot,
-                "error": f"unexpected command in flash response: 0x{flash_resp.command:02X}",
-            }
-        if not flash_resp.is_ok:
-            return {
-                "ok": False,
-                "command": "flash",
-                "slot": args.slot,
-                "error": flash_resp.status_name,
-            }
-
-        # 4) Optional verify after flashing.
         verify_info = None
         if not args.no_verify:
             v = bcp.request(BcpCommand.VERIFY, bytes([args.slot]), timeout=10.0)
