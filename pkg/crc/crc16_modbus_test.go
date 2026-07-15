@@ -29,3 +29,9 @@ func TestZeroCrc16Modbus(t *testing.T) {
 		t.Errorf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
 	}
 }
+
+func TestNilDataCrc16Modbus(t *testing.T) {
+	if _, err := Crc16Modbus(nil); err != ErrDataIsNil {
+		t.Errorf("wrong error: %v, expected ErrDataIsNil (%v)", err, ErrDataIsNil)
+	}
+}
