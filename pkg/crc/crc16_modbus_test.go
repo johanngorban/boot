@@ -8,11 +8,11 @@ func TestEmptyCrc16Modbus(t *testing.T) {
 
 	realCrc, err := Crc16Modbus(testData)
 	if err != nil {
-		t.Errorf("crc error: %v", err)
+		t.Fatalf("crc error: %v", err)
 	}
 
 	if expectedCrc != realCrc {
-		t.Errorf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
+		t.Fatalf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
 	}
 }
 
@@ -22,16 +22,16 @@ func TestZeroCrc16Modbus(t *testing.T) {
 
 	realCrc, err := Crc16Modbus(testData)
 	if err != nil {
-		t.Errorf("crc error: %v", err)
+		t.Fatalf("crc error: %v", err)
 	}
 
 	if expectedCrc != realCrc {
-		t.Errorf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
+		t.Fatalf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
 	}
 }
 
 func TestNilDataCrc16Modbus(t *testing.T) {
 	if _, err := Crc16Modbus(nil); err != ErrDataIsNil {
-		t.Errorf("wrong error: %v, expected ErrDataIsNil (%v)", err, ErrDataIsNil)
+		t.Fatalf("wrong error: %v, expected ErrDataIsNil (%v)", err, ErrDataIsNil)
 	}
 }
