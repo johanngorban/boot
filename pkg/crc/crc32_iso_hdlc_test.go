@@ -11,11 +11,11 @@ func TestEmptyCrc32IsoHdlc(t *testing.T) {
 
 	realCrc, err := Crc32IsoHdlc(testData)
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if realCrc != expectedCrc {
-		t.Errorf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
+		t.Fatalf("wrong crc: 0x%02X expected 0x%02X", realCrc, expectedCrc)
 	}
 }
 
@@ -25,11 +25,11 @@ func TestZeroCrc32IsoHdlc(t *testing.T) {
 
 	realCrc, err := Crc32IsoHdlc(testData)
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if realCrc != expectedCrc {
-		t.Errorf("wrong crc: 0x%02X, expected 0x%02X", realCrc, expectedCrc)
+		t.Fatalf("wrong crc: 0x%02X, expected 0x%02X", realCrc, expectedCrc)
 	}
 }
 
@@ -39,11 +39,11 @@ func TestCorrectCrc32IsoHdlc(t *testing.T) {
 
 	real, err := Crc32IsoHdlc(data)
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if real != expected {
-		t.Errorf("wrong crc: 0x%02X, expected 0x%02X", real, expected)
+		t.Fatalf("wrong crc: 0x%02X, expected 0x%02X", real, expected)
 	}
 }
 
@@ -53,11 +53,11 @@ func TestVeryLongCrc32IsoHdlc(t *testing.T) {
 
 	real, err := Crc32IsoHdlc(data)
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if real != expected {
-		t.Errorf("wrong crc: 0x%02X, expected 0x%02X", real, expected)
+		t.Fatalf("wrong crc: 0x%02X, expected 0x%02X", real, expected)
 	}
 }
 
@@ -80,16 +80,16 @@ func TestRandom256DigitCrc32IsoHdlc(t *testing.T) {
 
 	real, err := Crc32IsoHdlc(data)
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if real != expected {
-		t.Errorf("wrong crc: 0x%02X, expected 0x%02X", real, expected)
+		t.Fatalf("wrong crc: 0x%02X, expected 0x%02X", real, expected)
 	}
 }
 
 func TestNilDataCrc32IsoHdlc(t *testing.T) {
 	if _, err := Crc32IsoHdlc(nil); err != ErrDataIsNil {
-		t.Errorf("wrong error: %v, expected ErrDataIsNil (%v)", err, ErrDataIsNil)
+		t.Fatalf("wrong error: %v, expected ErrDataIsNil (%v)", err, ErrDataIsNil)
 	}
 }
