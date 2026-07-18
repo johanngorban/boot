@@ -1,6 +1,9 @@
 package bcp
 
-import "stm32-bootctl/pkg/crc"
+import (
+	"fmt"
+	"stm32-bootctl/pkg/crc"
+)
 
 type BcpCommand uint8
 
@@ -78,6 +81,29 @@ func (r *Request) SetData(data []byte) error {
 	r.Data = make([]byte, len(data))
 	copy(r.Data, data)
 	return nil
+}
+
+func (r *Response) IsOk() bool {
+	return r.Status == bcpOk
+}
+
+func (r *Response) StatusName() string {
+	switch r.Status {
+	case bcpOk:
+		return "ok"
+	case bcpUnknownCommand:
+		return "unknown command"
+	case bcpInvalidData:
+		return "invalid data"
+	case bcpBadCrc:
+		return "bad crc"
+	case bcpInvalidSlot:
+		return "invalid slot"
+	case bcpInternalError:
+		return "internal error"
+	default:
+		return fmt.Sprintf("unknown status 0x%02X", r.Status)
+	}
 }
 
 func packRequest(r Request) ([]byte, error) {

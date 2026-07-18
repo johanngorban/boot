@@ -13,7 +13,7 @@ type Client struct {
 	reader *bufio.Reader
 }
 
-func New(portName string, baudRate uint16) (*Client, error) {
+func Open(portName string, baudRate uint16) (*Client, error) {
 	mode := &serial.Mode{
 		BaudRate: int(baudRate),
 	}
@@ -26,6 +26,10 @@ func New(portName string, baudRate uint16) (*Client, error) {
 		serial: serial,
 		reader: bufio.NewReader(serial),
 	}, nil
+}
+
+func (c *Client) Close() {
+	c.Close()
 }
 
 func readFrame(r *bufio.Reader) ([]byte, error) {
