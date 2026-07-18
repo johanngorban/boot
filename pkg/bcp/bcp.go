@@ -73,7 +73,7 @@ func (r *Request) SetCommand(cmd BcpCommand) error {
 
 func (r *Request) SetData(data []byte) error {
 	if data == nil {
-		return ErrDataIsNil
+		return nil
 	}
 	if len(data) > int(bcpMaxDataLength) {
 		return ErrDataIsTooLong
