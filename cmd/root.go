@@ -1,6 +1,3 @@
-/*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -12,7 +9,6 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "stm32-bootctl",
 	Short: "Utility for stm32-bootloader",
-	Long:  "Utility for stm32-bootloader",
 }
 
 func Execute() {

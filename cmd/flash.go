@@ -7,11 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flashCmd represents the flash command
 var flashCmd = &cobra.Command{
 	Use:   "flash",
 	Short: "Flash a firmware image into a slot",
-	Long:  "Flash a firmware image into a slot",
 	Run:   wrap(flash),
 }
 

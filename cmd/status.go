@@ -23,14 +23,6 @@ func init() {
 	statusCmd.Flags().Uint("slot", 0, "Slot number (0 = all slots)")
 }
 
-// func status(cmd *cobra.Command, args []string) {
-// 	jsonEnabled, _ := cmd.Flags().GetBool("json")
-// 	if err := runStatus(cmd); err != nil {
-// 		printError(err, jsonEnabled)
-// 		os.Exit(1)
-// 	}
-// }
-
 func status(cmd *cobra.Command, args []string) error {
 	jsonEnabled, _ := cmd.Flags().GetBool("json")
 	slot, _ := cmd.Flags().GetUint("slot")
@@ -107,9 +99,6 @@ func verifySlot(c *bcp.Client, slot uint8) (ImageStatus, error) {
 			Slot:    slot,
 			IsValid: true,
 		}
-		if len(resp.Data) < 12 {
-			return ImageStatus{}, fmt.Errorf("short verify response: %d bytes", len(resp.Data))
-		}
 
 		major := resp.Data[1]
 		minor := resp.Data[2]
@@ -145,9 +134,8 @@ func printImageStatus(res ImageStatus, jsonEnabled bool) {
 					"patch":  *res.VersionPatch,
 					"string": fmt.Sprintf("%d.%d.%d", *res.VersionMajor, *res.VersionMinor, *res.VersionPatch),
 				},
-				"crc":     *res.Crc,
-				"crc_hex": fmt.Sprintf("0x%08X", *res.Crc),
-				"size":    *res.Size,
+				"crc":  fmt.Sprintf("0x%08X", *res.Crc),
+				"size": *res.Size,
 			}
 		}
 		b, _ := json.Marshal(out)
