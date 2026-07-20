@@ -28,9 +28,7 @@ func Open(portName string, baudRate uint16) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Close() {
-	c.Close()
-}
+func (c *Client) Close() {}
 
 func readFrame(r *bufio.Reader) ([]byte, error) {
 	// Waiting for SOF
