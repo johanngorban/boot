@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"stm32-bootctl/pkg/bcp"
+	"stm32-bootctl/pkg/fwp"
 
 	"github.com/spf13/cobra"
 )
@@ -17,6 +19,8 @@ func init() {
 	rootCmd.AddCommand(flashCmd)
 	flashCmd.Flags().Uint("slot", 1, "Slot number")
 	flashCmd.MarkFlagRequired("slot")
+	flashCmd.Flags().String("file", "", "Firmware file destination")
+	flashCmd.MarkFlagRequired("file")
 }
 
 func flash(cmd *cobra.Command, args []string) error {
@@ -26,11 +30,23 @@ func flash(cmd *cobra.Command, args []string) error {
 	port, _ := cmd.Flags().GetString("port")
 	baudrate, _ := cmd.Flags().GetUint("baud")
 
+	path, _ := cmd.Flags().GetString("file")
+	image, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
 	c, err := bcp.Open(port, uint16(baudrate))
 	if err != nil {
 		return fmt.Errorf("open port %s: %w", port, err)
 	}
 	defer c.Close()
+
+	fwpClient, err := fwp.Open(port, int(baudrate))
+	if err != nil {
+		return err
+	}
+	defer fwpClient.Close()
 
 	req, err := bcp.NewRequest(bcp.FlashCommand, []byte{uint8(slot)})
 	if err != nil {
@@ -52,8 +68,15 @@ func flash(cmd *cobra.Command, args []string) error {
 
 	if !resp.IsOk() {
 		return fmt.Errorf("flash failed: %s", resp.StatusName())
-	} else {
-		reportOk(jsonEnabled, "flash", slot)
-		return nil
 	}
+
+	reportOk(jsonEnabled, "flash", slot)
+
+	if err := fwpClient.Transfer(image, 5, nil); err != nil {
+		return fmt.Errorf("firmware transfer failed: %v", err)
+	}
+
+	fmt.Println("Firmware transferred successfully")
+
+	return nil
 }
