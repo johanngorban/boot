@@ -22,10 +22,10 @@ func init() {
 func run(cmd *cobra.Command, args []string) error {
 	jsonEnabled, _ := cmd.Flags().GetBool("json")
 	port, _ := cmd.Flags().GetString("port")
-	baudrate, _ := cmd.Flags().GetUint("baud")
+	baudrate, _ := cmd.Flags().GetInt("baud")
 	slot, _ := cmd.Flags().GetUint("slot")
 
-	c, err := bcp.Open(port, uint16(baudrate))
+	c, err := bcp.Open(port, baudrate)
 	if err != nil {
 		return fmt.Errorf("open port %s: %w", port, err)
 	}

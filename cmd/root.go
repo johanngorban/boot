@@ -21,5 +21,5 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().Bool("json", false, "Enable JSON output")
 	rootCmd.PersistentFlags().String("port", "/dev/ttyACM0", "Device port")
-	rootCmd.PersistentFlags().Uint("baud", 115200, "Baudrate")
+	rootCmd.PersistentFlags().Int("baud", 115200, "Baudrate")
 }

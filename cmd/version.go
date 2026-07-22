@@ -21,9 +21,9 @@ func init() {
 func version(cmd *cobra.Command, args []string) error {
 	jsonEnabled, _ := cmd.Flags().GetBool("json")
 	port, _ := cmd.Flags().GetString("port")
-	baudrate, _ := cmd.Flags().GetUint("baud")
+	baudrate, _ := cmd.Flags().GetInt("baud")
 
-	c, err := bcp.Open(port, uint16(baudrate))
+	c, err := bcp.Open(port, baudrate)
 	if err != nil {
 		return fmt.Errorf("open port %s: %w", port, err)
 	}
@@ -60,7 +60,7 @@ func version(cmd *cobra.Command, args []string) error {
 	patch := resp.Data[2]
 
 	if !jsonEnabled {
-		fmt.Printf("Bootloader version: v%d.%d.%d", major, minor, patch)
+		fmt.Printf("Bootloader version: v%d.%d.%d\n", major, minor, patch)
 	} else {
 		out := map[string]any{
 			"version": map[string]any{
