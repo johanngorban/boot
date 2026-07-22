@@ -4,34 +4,35 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
-	"io"
 
 	"go.bug.st/serial"
 )
 
-type FwpClient struct {
-	serial io.ReadWriter
+type Client struct {
+	port   serial.Port
 	reader *bufio.Reader
 }
 
-func Open(port string, baudrate int) (*FwpClient, error) {
+func Open(portName string, baudRate int) (*Client, error) {
 	mode := &serial.Mode{
-		BaudRate: baudrate,
+		BaudRate: int(baudRate),
 	}
-	serial, err := serial.Open(port, mode)
+	port, err := serial.Open(portName, mode)
 	if err != nil {
 		return nil, err
 	}
 
-	return &FwpClient{
-		serial: serial,
-		reader: bufio.NewReader(serial),
+	return &Client{
+		port:   port,
+		reader: bufio.NewReader(port),
 	}, nil
 }
 
-func (f *FwpClient) Close() {}
+func (c *Client) Close() error {
+	return c.port.Close()
+}
 
-func (f *FwpClient) sendWithRetry(packetType fwpPacketType, seq uint16, payload []byte, retries int) error {
+func (f *Client) sendWithRetry(packetType fwpPacketType, seq uint16, payload []byte, retries int) error {
 	packet, err := buildPacket(packetType, seq, payload)
 	if err != nil {
 		return err
@@ -39,7 +40,7 @@ func (f *FwpClient) sendWithRetry(packetType fwpPacketType, seq uint16, payload 
 
 	var last byte
 	for attempt := 1; attempt <= retries; attempt++ {
-		if _, err := f.serial.Write(packet); err != nil {
+		if _, err := f.port.Write(packet); err != nil {
 			return err
 		}
 
@@ -59,15 +60,15 @@ func (f *FwpClient) sendWithRetry(packetType fwpPacketType, seq uint16, payload 
 	return fmt.Errorf("packet failed after %d retries (type=0x%02X, seq=%d, last 0x%02X)", retries, packetType, seq, last)
 }
 
-func (f *FwpClient) waitAckOrNak() (byte, error) {
+func (f *Client) waitAckOrNak() (byte, error) {
 	resp := make([]byte, 1)
-	if _, err := f.serial.Read(resp); err != nil {
+	if _, err := f.port.Read(resp); err != nil {
 		return 0, err
 	}
 	return resp[0], nil
 }
 
-func (f *FwpClient) Transfer(image []byte, retries int, showProgress func(int, int)) error {
+func (f *Client) Transfer(image []byte, retries int, showProgress func(int, int)) error {
 	if showProgress == nil {
 		showProgress = func(a int, b int) {}
 	}
