@@ -26,57 +26,73 @@ func init() {
 func flash(cmd *cobra.Command, args []string) error {
 	jsonEnabled, _ := cmd.Flags().GetBool("json")
 	slot, _ := cmd.Flags().GetUint("slot")
+	if slot > 255 {
+		return fmt.Errorf("slot %d out of range (0-255)", slot)
+	}
 
 	port, _ := cmd.Flags().GetString("port")
-	baudrate, _ := cmd.Flags().GetUint("baud")
+	baudrate, _ := cmd.Flags().GetInt("baud")
 
 	path, _ := cmd.Flags().GetString("file")
 	image, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
+	if len(image) == 0 {
+		return fmt.Errorf("firmware file %s is empty", path)
+	}
 
-	c, err := bcp.Open(port, uint16(baudrate))
+	if err := requestFlash(port, baudrate, uint8(slot)); err != nil {
+		return err
+	}
+
+	c, err := fwp.Open(port, int(baudrate))
+	if err != nil {
+		return err
+	}
+
+	var progress func(int, int)
+	if !jsonEnabled {
+		progress = func(done, total int) {
+			fmt.Fprintf(os.Stderr, "\rTransferring %d/%d bytes (%d%%)", done, total, done*100/total)
+			if done >= total {
+				fmt.Fprintln(os.Stderr)
+			}
+		}
+	}
+
+	if err := c.Transfer(image, 5, progress); err != nil {
+		return fmt.Errorf("firmware transfer failed: %w", err)
+	}
+
+	reportOk(jsonEnabled, "flash", slot)
+
+	return nil
+}
+
+func requestFlash(port string, baudrate int, slot uint8) error {
+	c, err := bcp.Open(port, baudrate)
 	if err != nil {
 		return fmt.Errorf("open port %s: %w", port, err)
 	}
 	defer c.Close()
 
-	fwpClient, err := fwp.Open(port, int(baudrate))
-	if err != nil {
-		return err
-	}
-	defer fwpClient.Close()
-
-	req, err := bcp.NewRequest(bcp.FlashCommand, []byte{uint8(slot)})
+	req, err := bcp.NewRequest(bcp.FlashCommand, []byte{slot})
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
-
-	if err = c.Send(req); err != nil {
+	if err := c.Send(req); err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
-
 	resp, err := c.Recv()
 	if err != nil {
 		return fmt.Errorf("recv: %w", err)
 	}
-
 	if resp.Command != req.Command {
 		return fmt.Errorf("unexpected command in response: 0x%02X", uint8(resp.Command))
 	}
-
 	if !resp.IsOk() {
 		return fmt.Errorf("flash failed: %s", resp.StatusName())
 	}
-
-	reportOk(jsonEnabled, "flash", slot)
-
-	if err := fwpClient.Transfer(image, 5, nil); err != nil {
-		return fmt.Errorf("firmware transfer failed: %v", err)
-	}
-
-	fmt.Println("Firmware transferred successfully")
-
 	return nil
 }

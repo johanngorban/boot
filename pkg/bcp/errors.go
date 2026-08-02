@@ -30,7 +30,7 @@ func mapBcpStatus(status uint8) error {
 	case bcpInvalidSlot:
 		return ErrInvalidSlot
 	case bcpInternalError:
-		return ErrInvalidSlot
+		return ErrInternalError
 	default:
 		return ErrUnknwonError
 	}

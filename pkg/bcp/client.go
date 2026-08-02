@@ -9,26 +9,28 @@ import (
 )
 
 type Client struct {
-	serial io.ReadWriter
+	port   serial.Port
 	reader *bufio.Reader
 }
 
-func Open(portName string, baudRate uint16) (*Client, error) {
+func Open(portName string, baudRate int) (*Client, error) {
 	mode := &serial.Mode{
 		BaudRate: int(baudRate),
 	}
-	serial, err := serial.Open(portName, mode)
+	port, err := serial.Open(portName, mode)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		serial: serial,
-		reader: bufio.NewReader(serial),
+		port:   port,
+		reader: bufio.NewReader(port),
 	}, nil
 }
 
-func (c *Client) Close() {}
+func (c *Client) Close() error {
+	return c.port.Close()
+}
 
 func readFrame(r *bufio.Reader) ([]byte, error) {
 	// Waiting for SOF
@@ -76,7 +78,7 @@ func (c *Client) Send(r Request) error {
 	frame[0] = bcpSof
 	copy(frame[1:], rawRequest)
 
-	n, err := c.serial.Write(frame)
+	n, err := c.port.Write(frame)
 	if err != nil {
 		return err
 	}

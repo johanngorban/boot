@@ -27,9 +27,9 @@ func status(cmd *cobra.Command, args []string) error {
 	jsonEnabled, _ := cmd.Flags().GetBool("json")
 	slot, _ := cmd.Flags().GetUint("slot")
 	port, _ := cmd.Flags().GetString("port")
-	baudrate, _ := cmd.Flags().GetUint("baud")
+	baudrate, _ := cmd.Flags().GetInt("baud")
 
-	c, err := bcp.Open(port, uint16(baudrate))
+	c, err := bcp.Open(port, baudrate)
 	if err != nil {
 		return fmt.Errorf("open port %s: %w", port, err)
 	}
@@ -67,11 +67,11 @@ type ImageStatus struct {
 func verifySlot(c *bcp.Client, slot uint8) (ImageStatus, error) {
 	req, err := bcp.NewRequest(bcp.VerifyCommand, []byte{slot})
 	if err != nil {
-		return ImageStatus{}, nil
+		return ImageStatus{}, err
 	}
 
 	if err = c.Send(req); err != nil {
-		return ImageStatus{}, nil
+		return ImageStatus{}, err
 	}
 
 	resp, err := c.Recv()
@@ -82,10 +82,6 @@ func verifySlot(c *bcp.Client, slot uint8) (ImageStatus, error) {
 	if resp.Command != bcp.VerifyCommand {
 		err = fmt.Errorf("unexpected command in response: 0x%02X", uint8(resp.Command))
 		return ImageStatus{}, err
-	}
-
-	if len(resp.Data) != 12 {
-		return ImageStatus{}, fmt.Errorf("incorrect payload length: expected 12 bytes, got %d", len(resp.Data))
 	}
 
 	switch resp.Data[0] {
