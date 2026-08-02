@@ -24,6 +24,9 @@ func run(cmd *cobra.Command, args []string) error {
 	port, _ := cmd.Flags().GetString("port")
 	baudrate, _ := cmd.Flags().GetInt("baud")
 	slot, _ := cmd.Flags().GetUint("slot")
+	if slot > 255 {
+		return fmt.Errorf("slot %d out of range (0-255)", slot)
+	}
 
 	c, err := bcp.Open(port, baudrate)
 	if err != nil {
@@ -31,7 +34,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	defer c.Close()
 
-	req, err := bcp.NewRequest(bcp.VersionCommand, nil)
+	req, err := bcp.NewRequest(bcp.RunCommand, []byte{uint8(slot)})
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
@@ -56,7 +59,7 @@ func run(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Starting slot #%d\n", slot)
 		}
 	} else {
-		return fmt.Errorf("version fetching failed: %s", resp.StatusName())
+		return fmt.Errorf("run failed: %s", resp.StatusName())
 	}
 
 	return nil

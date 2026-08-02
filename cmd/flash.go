@@ -21,6 +21,7 @@ func init() {
 	flashCmd.MarkFlagRequired("slot")
 	flashCmd.Flags().String("file", "", "Firmware file destination")
 	flashCmd.MarkFlagRequired("file")
+	flashCmd.Flags().Bool("no-verify", false, "Skip post-flash verification")
 }
 
 func flash(cmd *cobra.Command, args []string) error {
@@ -32,6 +33,7 @@ func flash(cmd *cobra.Command, args []string) error {
 
 	port, _ := cmd.Flags().GetString("port")
 	baudrate, _ := cmd.Flags().GetInt("baud")
+	noVerify, _ := cmd.Flags().GetBool("no-verify")
 
 	path, _ := cmd.Flags().GetString("file")
 	image, err := os.ReadFile(path)
@@ -46,11 +48,6 @@ func flash(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	c, err := fwp.Open(port, int(baudrate))
-	if err != nil {
-		return err
-	}
-
 	var progress func(int, int)
 	if !jsonEnabled {
 		progress = func(done, total int) {
@@ -61,8 +58,14 @@ func flash(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if err := c.Transfer(image, 5, progress); err != nil {
-		return fmt.Errorf("firmware transfer failed: %w", err)
+	if err := transferFirmware(port, baudrate, image, progress); err != nil {
+		return err
+	}
+
+	if !noVerify {
+		if err := verifyFlashed(port, baudrate, uint8(slot)); err != nil {
+			return err
+		}
 	}
 
 	reportOk(jsonEnabled, "flash", slot)
@@ -93,6 +96,36 @@ func requestFlash(port string, baudrate int, slot uint8) error {
 	}
 	if !resp.IsOk() {
 		return fmt.Errorf("flash failed: %s", resp.StatusName())
+	}
+	return nil
+}
+
+func transferFirmware(port string, baudrate int, image []byte, progress func(int, int)) error {
+	c, err := fwp.Open(port, baudrate)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	if err := c.Transfer(image, 5, progress); err != nil {
+		return fmt.Errorf("firmware transfer failed: %w", err)
+	}
+	return nil
+}
+
+func verifyFlashed(port string, baudrate int, slot uint8) error {
+	c, err := bcp.Open(port, baudrate)
+	if err != nil {
+		return fmt.Errorf("open port %s: %w", port, err)
+	}
+	defer c.Close()
+
+	st, err := verifySlot(c, slot)
+	if err != nil {
+		return fmt.Errorf("verify failed: %w", err)
+	}
+	if !st.IsValid {
+		return fmt.Errorf("post-flash verify reports image as invalid")
 	}
 	return nil
 }

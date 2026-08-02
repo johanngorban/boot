@@ -84,6 +84,10 @@ func verifySlot(c *bcp.Client, slot uint8) (ImageStatus, error) {
 		return ImageStatus{}, err
 	}
 
+	if len(resp.Data) == 0 {
+		return ImageStatus{}, fmt.Errorf("empty verify response")
+	}
+
 	switch resp.Data[0] {
 	case 0:
 		return ImageStatus{
@@ -91,6 +95,10 @@ func verifySlot(c *bcp.Client, slot uint8) (ImageStatus, error) {
 			IsValid: false,
 		}, nil
 	case 1:
+		if len(resp.Data) < 12 {
+			return ImageStatus{}, fmt.Errorf("short verify response: %d bytes", len(resp.Data))
+		}
+
 		res := ImageStatus{
 			Slot:    slot,
 			IsValid: true,

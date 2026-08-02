@@ -26,18 +26,21 @@ func buildPacket(packetType fwpPacketType, seq uint16, payload []byte) ([]byte, 
 		return nil, ErrPayloadOverflow
 	}
 
-	header := make([]byte, fwpHeaderSize)
-	header[0] = byte(packetType)
-	binary.LittleEndian.PutUint16(header[1:3], seq)
-	binary.LittleEndian.PutUint16(header[3:5], uint16(len(payload)))
+	body := make([]byte, fwpHeaderSize+len(payload))
+	body[0] = byte(packetType)
+	binary.LittleEndian.PutUint16(body[1:3], seq)
+	binary.LittleEndian.PutUint16(body[3:5], uint16(len(payload)))
+	copy(body[fwpHeaderSize:], payload)
 
-	body := append(header, payload...)
-	crc, err := crc.Crc16Modbus(body)
+	crcValue, err := crc.Crc16Modbus(body)
 	if err != nil {
 		return nil, err
 	}
 
-	packet := make([]byte, len(body)+2)
-	binary.LittleEndian.PutUint16(packet[len(body):len(body)+1], crc)
+	packet := make([]byte, 1+len(body)+2)
+	packet[0] = fwpSof
+	copy(packet[1:], body)
+	binary.LittleEndian.PutUint16(packet[1+len(body):], crcValue)
+
 	return packet, nil
 }
